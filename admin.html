@@ -1,0 +1,93 @@
+<!-- /public/admin.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Cadastro de Produtos - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;margin:0;background:#f7f7f8;color:#111}
+    header{padding:16px 20px;background:#111;color:#fff}
+    main{max-width:980px;margin:24px auto;padding:0 16px}
+    .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+    .grid{display:grid;gap:12px}
+    .grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    label{display:block;font-size:14px;margin-bottom:6px;color:#374151}
+    input[type="text"], input[type="number"], textarea{
+      width:100%;padding:10px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font-size:14px;outline:none
+    }
+    textarea{min-height:90px;resize:vertical}
+    .sizes{display:flex;flex-wrap:wrap;gap:8px}
+    .size-btn{border:1px solid #e5e7eb;background:#fff;border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:600}
+    .size-btn.active{background:#111;color:#fff;border-color:#111}
+    .size-block{border:1px dashed #d1d5db;border-radius:10px;padding:12px;margin-top:10px}
+    .thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .thumb{width:76px;height:76px;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;background:#fafafa;position:relative}
+    .thumb img{width:100%;height:100%;object-fit:cover}
+    .thumb button{position:absolute;top:4px;right:4px;border:none;background:#111;color:#fff;border-radius:6px;font-size:12px;padding:2px 6px;cursor:pointer}
+    .row{display:flex;gap:12px;align-items:center}
+    .row > *{flex:1}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+    .btn{border:1px solid #111;background:#111;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+    .btn.secondary{border-color:#e5e7eb;background:#fff;color:#111}
+    .muted{color:#6b7280;font-size:12px}
+    .hidden{display:none}
+    .help{font-size:12px;color:#4b5563}
+    .ok{color:#059669}
+    .err{color:#dc2626}
+  </style>
+</head>
+<body>
+  <header><strong>Admin · Cadastro de Produtos</strong></header>
+  <main>
+    <div class="card">
+      <h2 style="margin:0 0 12px 0;">Novo Produto</h2>
+      <div class="grid cols-2">
+        <div>
+          <label>Nome do produto</label>
+          <input id="nome" type="text" placeholder="Ex: Conjunto Floral" />
+        </div>
+        <div>
+          <label>Preço (R$)</label>
+          <input id="preco" type="number" step="0.01" placeholder="Ex: 99.90" />
+        </div>
+      </div>
+
+      <div style="margin-top:12px" class="grid cols-2">
+        <div>
+          <label>URL do modelo (imagem principal)</label>
+          <input id="modeloUrl" type="text" placeholder="Ex: https://.../modelo.jpg" />
+          <div class="help">* Nesta versão simples usamos URL. Depois podemos trocar para upload.</div>
+        </div>
+        <div>
+          <label>Descrição</label>
+          <textarea id="descricao" placeholder="Ex: Conjunto em renda floral..."></textarea>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <label>Tamanhos disponíveis</label>
+        <div class="sizes" id="sizesBar"></div>
+        <div id="sizesBlocks"></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn secondary" id="btnPreview">Pré-visualizar JSON</button>
+        <button class="btn" id="btnSalvar">Salvar produto</button>
+      </div>
+      <div id="status" class="muted" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 8px 0;">Pré-visualização dos dados</h3>
+      <pre id="preview" style="white-space:pre-wrap;font-size:12px;margin:0;background:#0b1020;color:#e5e7eb;padding:12px;border-radius:10px;max-height:360px;overflow:auto;">{}</pre>
+    </div>
+  </main>
+
+  <!-- Suas chaves -->
+  <script src="/config.js"></script>
+  <!-- Supabase ESM (carregado do CDN) -->
+  <script type="module" src="/admin.js"></script>
+</body>
+</html>
