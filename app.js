@@ -1,7 +1,7 @@
 /**
  * @file app.js
- * @description Script principal para o e-commerce Arenza, com sistema de autenticação Supabase.
- * @version 3.0 (Fluxo de inicialização corrigido para ambiente local e de produção)
+ * @description Script principal para o e-commerce Arenza, com sistema de autenticação Supabase + cadastro com upload por tamanho.
+ * @version 4.0 (integra upload por tamanho mantendo compatibilidade com size_variants)
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,7 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
         '/.netlify/functions/get-config'
     ];
 
-    // Seletores do DOM
+    // NOVO: configuração de tamanhos e bucket de imagens
+    const SIZES = ["P", "M", "G", "GG", "G1", "G2"];
+    const STORAGE_BUCKET = "products";
+
+    // Seletores do DOM (originais)
     const navAdminLink = document.getElementById('nav-admin-link');
     const navLoginLink = document.getElementById('nav-login-link');
     const navLogoutLink = document.getElementById('nav-logout-link');
@@ -45,6 +49,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabContents = document.querySelectorAll('.tab-content');
     const cancelEditBtn = document.getElementById('btn-cancel-edit');
 
+    // NOVO: seletores do painel integrado (nome, preço, etc. + upload por tamanho)
+    const nomeInput = document.getElementById('nome');
+    const precoInput = document.getElementById('preco');
+    const descricaoInput = document.getElementById('descricao');
+    const modeloUrlInput = document.getElementById('modeloUrl');
+    const sizesBar = document.getElementById('sizesBar');
+    const sizesBlocks = document.getElementById('sizesBlocks');
+    const adminSaveBtn = document.getElementById('btnSalvar');
+    const statusEl = document.getElementById('status');
+
+    // Estado do painel integrado (upload por tamanho)
+    const adminState = {
+        nome: "",
+        preco: "",
+        descricao: "",
+        modeloUrl: "",
+        // { P: {active:boolean, uploads:[url,...]}, ... }
+        tamanhos: Object.fromEntries(SIZES.map(sz => [sz, { active: false, uploads: [] }]))
+    };
+
     // --------------------------------------------------
     // ---- 2. FUNÇÕES DE RENDERIZAÇÃO E UI
     // --------------------------------------------------
@@ -62,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     };
+
+    const looksLikeUrl = (s) => /^https?:\/\//i.test(String(s || '').trim());
 
     const normalizeVariantEntry = (entry) => {
         if (!entry) return null;
@@ -90,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const parsed = JSON.parse(raw);
                 return parseVariantField(parsed);
-            } catch (error) {
+            } catch (_) {
                 console.warn('Não foi possível interpretar as variantes (JSON inválido).');
                 return [];
             }
@@ -140,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return parseVariantField(raw);
     };
 
+    // ATUALIZADO: agora renderiza imagens se o “print” for URL, senão badges de texto
     const initializeVariantControls = () => {
         if (!productGrid) return;
         productGrid.querySelectorAll('.size-select').forEach((select) => {
@@ -156,13 +183,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     printsContainer.innerHTML = '<p class="print-empty">Estampas indisponíveis para este tamanho.</p>';
                     return;
                 }
-                const badges = variant.prints
-                    .map(print => `<span class="print-badge">${escapeHtml(print)}</span>`)
-                    .join('');
-                printsContainer.innerHTML = `
-                    <p>Estampas disponíveis:</p>
-                    <div class="print-list">${badges}</div>
-                `;
+                const items = variant.prints || [];
+                // Se alguma estampa parecer URL, renderiza como imagem; caso contrário, badges de texto
+                if (items.some(looksLikeUrl)) {
+                    const imgs = items.map(u => `<img src="${escapeHtml(u)}" class="print-thumb" style="width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;margin:4px;">`).join('');
+                    printsContainer.innerHTML = `<div class="print-list">${imgs}</div>`;
+                } else {
+                    const badges = items.map(print => `<span class="print-badge">${escapeHtml(print)}</span>`).join('');
+                    printsContainer.innerHTML = `<div class="print-list">${badges}</div>`;
+                }
             };
 
             select.addEventListener('change', (event) => {
@@ -179,10 +208,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateUserInterface() {
         const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
-        navLoginLink.classList.toggle('hidden', !!currentUser);
-        navLogoutLink.classList.toggle('hidden', !currentUser);
-        navAdminLink.classList.toggle('hidden', !isAdmin);
-        adminPanelSection.classList.toggle('hidden', !isAdmin);
+        navLoginLink?.classList.toggle('hidden', !!currentUser);
+        navLogoutLink?.classList.toggle('hidden', !currentUser);
+        navAdminLink?.classList.toggle('hidden', !isAdmin);
+        adminPanelSection?.classList.toggle('hidden', !isAdmin);
     }
 
     const createProductCard = (product) => {
@@ -291,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const { error } = await dbClient.from('products').insert([productData]);
             if (error) throw error;
             alert('Produto adicionado com sucesso!');
-            productForm.reset();
+            productForm?.reset();
             await fetchProducts();
         } catch (error) {
             console.error('Erro ao adicionar produto:', error.message);
@@ -359,6 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- 4. MODAIS E EVENTOS
     // --------------------------------------------------
     const openEditModal = (product) => {
+        if (!editModal) return;
         editModal.querySelector('#edit-product-id').value = product.id;
         editModal.querySelector('#edit-product-name').value = product.name;
         editModal.querySelector('#edit-product-price').value = product.price;
@@ -369,69 +399,82 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         editModal.classList.add('active');
     };
-    const closeEditModal = () => editModal.classList.remove('active');
-    const openAuthModal = () => authModal.classList.add('active');
-    const closeAuthModal = () => authModal.classList.remove('active');
+    const closeEditModal = () => editModal?.classList.remove('active');
+    const openAuthModal = () => authModal?.classList.add('active');
+    const closeAuthModal = () => authModal?.classList.remove('active');
     const showAuthError = (message) => {
+        if (!authErrorMessage) return;
         authErrorMessage.textContent = message;
         authErrorMessage.classList.remove('hidden');
     };
     const hideAuthError = () => {
+        if (!authErrorMessage) return;
         authErrorMessage.textContent = '';
         authErrorMessage.classList.add('hidden');
     };
 
     function setupEventListeners() {
-        navLoginLink.addEventListener('click', (e) => { e.preventDefault(); openAuthModal(); });
-        navLogoutLink.addEventListener('click', (e) => { e.preventDefault(); signOutUser(); });
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            hideAuthError();
-            signInUser(loginForm.querySelector('#login-email').value, loginForm.querySelector('#login-password').value);
-        });
-        signupForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            hideAuthError();
-            signUpNewUser(signupForm.querySelector('#signup-email').value, signupForm.querySelector('#signup-password').value);
-        });
-        productForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            let variantPayload = null;
-            try {
-                const variants = parseVariantTextareaInput(productVariantsInput?.value || '');
-                variantPayload = variants.length > 0 ? JSON.stringify(variants) : null;
-            } catch (error) {
-                alert(error.message);
-                return;
-            }
-            addProduct({
-                name: document.getElementById('product-name').value,
-                price: document.getElementById('product-price').value,
-                description: document.getElementById('product-description').value,
-                image: document.getElementById('product-image').value,
-                [VARIANT_FIELD_KEY]: variantPayload
+        navLoginLink?.addEventListener('click', (e) => { e.preventDefault(); openAuthModal(); });
+        navLogoutLink?.addEventListener('click', (e) => { e.preventDefault(); signOutUser(); });
+
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                hideAuthError();
+                signInUser(loginForm.querySelector('#login-email').value, loginForm.querySelector('#login-password').value);
             });
-        });
-        editForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const id = editForm.querySelector('#edit-product-id').value;
-            let variantPayload = null;
-            try {
-                const variants = parseVariantTextareaInput(editVariantsInput?.value || '');
-                variantPayload = variants.length > 0 ? JSON.stringify(variants) : null;
-            } catch (error) {
-                alert(error.message);
-                return;
-            }
-            updateProduct(id, {
-                name: editForm.querySelector('#edit-product-name').value,
-                price: editForm.querySelector('#edit-product-price').value,
-                description: editForm.querySelector('#edit-product-description').value,
-                image: editForm.querySelector('#edit-product-image').value,
-                [VARIANT_FIELD_KEY]: variantPayload
+        }
+        if (signupForm) {
+            signupForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                hideAuthError();
+                signUpNewUser(signupForm.querySelector('#signup-email').value, signupForm.querySelector('#signup-password').value);
             });
-        });
-        productGrid.addEventListener('click', (event) => {
+        }
+        if (productForm) {
+            // Mantém o fluxo antigo baseado em textarea, para compatibilidade
+            productForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                let variantPayload = null;
+                try {
+                    const variants = parseVariantTextareaInput(productVariantsInput?.value || '');
+                    variantPayload = variants.length > 0 ? JSON.stringify(variants) : null;
+                } catch (error) {
+                    alert(error.message);
+                    return;
+                }
+                addProduct({
+                    name: document.getElementById('product-name').value,
+                    price: document.getElementById('product-price').value,
+                    description: document.getElementById('product-description').value,
+                    image: document.getElementById('product-image').value,
+                    [VARIANT_FIELD_KEY]: variantPayload
+                });
+            });
+        }
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const id = editForm.querySelector('#edit-product-id').value;
+                let variantPayload = null;
+                try {
+                    const variants = parseVariantTextareaInput(editVariantsInput?.value || '');
+                    variantPayload = variants.length > 0 ? JSON.stringify(variants) : null;
+                } catch (error) {
+                    alert(error.message);
+                    return;
+                }
+                updateProduct(id, {
+                    name: editForm.querySelector('#edit-product-name').value,
+                    price: editForm.querySelector('#edit-product-price').value,
+                    description: editForm.querySelector('#edit-product-description').value,
+                    image: editForm.querySelector('#edit-product-image').value,
+                    [VARIANT_FIELD_KEY]: variantPayload
+                });
+            });
+        }
+
+        productGrid?.addEventListener('click', (event) => {
             const btn = event.target.closest('.action-btn');
             if (!btn) return;
             const id = parseInt(btn.dataset.id);
@@ -442,6 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (productToEdit) openEditModal(productToEdit);
             }
         });
+
         tabLinks.forEach(tab => {
             tab.addEventListener('click', () => {
                 hideAuthError();
@@ -451,15 +495,213 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById(tab.dataset.tab).classList.add('active');
             });
         });
-        authModal.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
-        editModal.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
-        cancelEditBtn.addEventListener('click', closeEditModal);
-        window.addEventListener('scroll', () => header.classList.toggle('scrolled', window.scrollY > 50));
+
+        authModal?.addEventListener('click', (e) => { if (e.target === authModal) closeAuthModal(); });
+        editModal?.addEventListener('click', (e) => { if (e.target === editModal) closeEditModal(); });
+        cancelEditBtn?.addEventListener('click', closeEditModal);
+
+        window.addEventListener('scroll', () => header?.classList.toggle('scrolled', window.scrollY > 50));
+
+        // NOVO: listeners do painel integrado
+        if (nomeInput)   nomeInput.addEventListener('input', e => adminState.nome = e.target.value);
+        if (precoInput)  precoInput.addEventListener('input', e => adminState.preco = e.target.value);
+        if (descricaoInput) descricaoInput.addEventListener('input', e => adminState.descricao = e.target.value);
+        if (modeloUrlInput) modeloUrlInput.addEventListener('input', e => adminState.modeloUrl = e.target.value);
+        if (adminSaveBtn) adminSaveBtn.addEventListener('click', handleAdminSave);
     }
 
     // --------------------------------------------------
-    // ---- 5. INICIALIZAÇÃO DA APLICAÇÃO
+    // ---- 5. PAINEL INTEGRADO: UPLOAD POR TAMANHO
     // --------------------------------------------------
+    function setAdminStatus(msg, kind = "muted") {
+        if (!statusEl) return;
+        statusEl.textContent = msg;
+        statusEl.style.color = kind === "ok" ? "#059669" : kind === "err" ? "#dc2626" : "#4b5563";
+    }
+
+    function renderSizesBar() {
+        if (!sizesBar) return;
+        sizesBar.innerHTML = "";
+        SIZES.forEach(sz => {
+            const btn = document.createElement("button");
+            btn.className = "size-btn";
+            btn.textContent = sz;
+            if (adminState.tamanhos[sz].active) btn.classList.add("active");
+            btn.onclick = () => toggleAdminSize(sz, btn);
+            sizesBar.appendChild(btn);
+        });
+        renderSizeBlocks();
+    }
+
+    function toggleAdminSize(sz, btn) {
+        adminState.tamanhos[sz].active = !adminState.tamanhos[sz].active;
+        btn.classList.toggle("active", adminState.tamanhos[sz].active);
+        renderSizeBlocks();
+    }
+
+    function renderSizeBlocks() {
+        if (!sizesBlocks) return;
+        sizesBlocks.innerHTML = "";
+        SIZES.forEach(sz => {
+            if (!adminState.tamanhos[sz].active) return;
+            const block = document.createElement("div");
+            block.style.border = "1px dashed #d1d5db";
+            block.style.borderRadius = "10px";
+            block.style.padding = "10px";
+            block.style.marginBottom = "10px";
+
+            const title = document.createElement("div");
+            title.innerHTML = `<strong>Tamanho ${sz}</strong> · Upload de estampas`;
+            block.appendChild(title);
+
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.multiple = true;
+            input.addEventListener("change", (e) => handleUploadFiles(sz, e.target.files));
+            block.appendChild(input);
+
+            const thumbs = document.createElement("div");
+            thumbs.id = `thumbs-${sz}`;
+            thumbs.className = "thumbs";
+            thumbs.style.display = "flex";
+            thumbs.style.flexWrap = "wrap";
+            thumbs.style.gap = "8px";
+            thumbs.style.marginTop = "8px";
+            // render existentes
+            adminState.tamanhos[sz].uploads.forEach(url => {
+                const img = document.createElement("img");
+                img.src = url;
+                img.style.width = "70px";
+                img.style.height = "70px";
+                img.style.objectFit = "cover";
+                img.style.borderRadius = "6px";
+                img.style.border = "1px solid #e5e7eb";
+                thumbs.appendChild(img);
+            });
+
+            block.appendChild(thumbs);
+            sizesBlocks.appendChild(block);
+        });
+    }
+
+    async function handleUploadFiles(sizeKey, fileList) {
+        if (!adminState.nome.trim()) {
+            setAdminStatus("Informe o nome do produto antes de enviar imagens.", "err");
+            return;
+        }
+        if (!fileList || fileList.length === 0) return;
+
+        setAdminStatus(`Enviando ${fileList.length} arquivo(s) para ${sizeKey}...`);
+        const slug = adminState.nome
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+
+        for (const file of Array.from(fileList)) {
+            const path = `${slug}/${sizeKey}/${Date.now()}-${file.name}`;
+            const { error: upErr } = await dbClient.storage.from(STORAGE_BUCKET).upload(path, file, {
+                upsert: false,
+                contentType: file.type || "image/*"
+            });
+            if (upErr) {
+                console.error(upErr);
+                setAdminStatus(`Falha ao enviar "${file.name}": ${upErr.message}`, "err");
+                continue;
+            }
+            const { data: pub } = dbClient.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+            const url = pub?.publicUrl;
+            if (url) {
+                adminState.tamanhos[sizeKey].uploads.push(url);
+                // re-render thumbs do bloco específico
+                const t = document.getElementById(`thumbs-${sizeKey}`);
+                if (t) {
+                    const img = document.createElement("img");
+                    img.src = url;
+                    img.style.width = "70px";
+                    img.style.height = "70px";
+                    img.style.objectFit = "cover";
+                    img.style.borderRadius = "6px";
+                    img.style.border = "1px solid #e5e7eb";
+                    t.appendChild(img);
+                }
+            }
+        }
+        setAdminStatus("Upload concluído.", "ok");
+    }
+
+    function buildVariantsFromAdminState() {
+        // Converte adminState.tamanhos -> array compatível com size_variants
+        // Ex: [{ size: "P", prints: ["url1","url2"]}, ...]
+        const out = [];
+        for (const sz of SIZES) {
+            const { active, uploads } = adminState.tamanhos[sz];
+            if (active && uploads && uploads.length) {
+                out.push({ size: sz, prints: uploads.slice() });
+            }
+        }
+        return out;
+    }
+
+    async function handleAdminSave() {
+        // validação simples
+        if (!dbClient) { alert("Sem conexão com Supabase."); return; }
+        const nome = (nomeInput?.value || "").trim();
+        const preco = parseFloat(precoInput?.value || "0");
+        const descricao = (descricaoInput?.value || "").trim();
+        const modeloUrl = (modeloUrlInput?.value || "").trim();
+        if (!nome) { setAdminStatus("Informe o nome do produto.", "err"); return; }
+        if (!preco || Number.isNaN(preco)) { setAdminStatus("Informe um preço válido.", "err"); return; }
+
+        // monta payload compatível com o schema atual (name, price, description, image, size_variants)
+        const sizeVariants = buildVariantsFromAdminState();
+        const productData = {
+            name: nome,
+            price: preco,
+            description: descricao,
+            image: modeloUrl,
+            [VARIANT_FIELD_KEY]: sizeVariants.length ? JSON.stringify(sizeVariants) : null
+        };
+
+        setAdminStatus("Salvando produto...");
+        try {
+            const { error } = await dbClient.from('products').insert([productData]);
+            if (error) throw error;
+            setAdminStatus("Produto salvo com sucesso!", "ok");
+
+            // limpa estado e UI
+            adminState.nome = "";
+            adminState.preco = "";
+            adminState.descricao = "";
+            adminState.modeloUrl = "";
+            Object.keys(adminState.tamanhos).forEach(k => adminState.tamanhos[k] = { active: false, uploads: [] });
+            if (nomeInput) nomeInput.value = "";
+            if (precoInput) precoInput.value = "";
+            if (descricaoInput) descricaoInput.value = "";
+            if (modeloUrlInput) modeloUrlInput.value = "";
+            renderSizesBar();
+            await fetchProducts();
+        } catch (err) {
+            console.error(err);
+            setAdminStatus("Erro ao salvar produto: " + err.message, "err");
+        }
+    }
+
+    // --------------------------------------------------
+    // ---- 6. INICIALIZAÇÃO DA APLICAÇÃO
+    // --------------------------------------------------
+    function setupFadeIns() {
+        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+    }
+
+    const renderBase = () => {
+        renderTestimonials();
+        setupFadeIns();
+        setInterval(nextTestimonial, 5000);
+        // Render da barra de tamanhos do painel integrado
+        renderSizesBar();
+    };
+
     async function resolveRemoteConfig() {
         for (const endpoint of REMOTE_CONFIG_ENDPOINTS) {
             try {
@@ -478,12 +720,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function main() {
         setupEventListeners();
-        renderTestimonials();
-        setInterval(nextTestimonial, 5000);
-        document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+        renderBase();
 
         try {
-            // Ambiente de desenvolvimento (local) - Verifica se config.js foi carregado
+            // Ambiente de desenvolvimento (local) - verifica config.js (compatível com seu fluxo)
             if (typeof SUPABASE_CONFIG !== 'undefined') {
                 ADMIN_EMAIL = SUPABASE_CONFIG.ADMIN_EMAIL;
                 dbClient = supabase.createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.ANON_KEY);
