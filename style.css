@@ -546,3 +546,63 @@ section {
         gap: 1rem;
     }
 }
+
+/* === NOVO PAINEL DE PRODUTO === */
+.sizes-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.size-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  cursor: pointer;
+  background: #fff;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.size-btn.active {
+  background: #9b1b30;
+  color: #fff;
+  border-color: #9b1b30;
+}
+
+.sizes-blocks {
+  margin-top: 10px;
+}
+
+.sizes-blocks .block {
+  border: 1px dashed #bbb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.sizes-blocks input[type="file"] {
+  margin-top: 0.5rem;
+}
+
+.thumbs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.thumbs img {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.status-msg {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  color: #555;
+}
