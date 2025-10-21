@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
->
+<head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Arenza Moda Íntima - Desejo e Elegância</title>
 
+  <!-- FONTES E ESTILOS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500&display=swap" rel="stylesheet">
@@ -18,7 +19,7 @@
   <header id="header" class="main-header">
     <div class="container header-content">
       <a href="#" class="logo">
-        <img src="img/logo.jpeg" alt="Arenza Logo">
+        <img src="logo.jpeg" alt="Arenza Logo">
       </a>
       <nav class="main-nav">
         <a href="#hero">Início</a>
@@ -32,19 +33,24 @@
   </header>
 
   <!-- ===== HERO ===== -->
-  <section id="hero" class="fade-in">
-    <div class="hero-content">
-      <h1>Arenza Moda Íntima</h1>
-      <p>Desejo e elegância em cada detalhe.</p>
-      <a href="#products" class="cta-button">Explorar Coleção</a>
+  <section id="hero">
+    <div class="hero-overlay">
+      <div class="hero-content">
+        <div class="hero-logo">
+          <img src="capa1.png" alt="Logo Arenza">
+        </div>
+        <h1>Arenza</h1>
+        <h2>Moda íntima</h2>
+        <a href="#products" class="cta-button-outline">Compre Agora</a>
+      </div>
     </div>
   </section>
 
   <!-- ===== PRODUTOS ===== -->
   <section id="products">
     <div class="container">
-      <h2 class="section-title fade-in">Coleção Exclusiva</h2>
-      <p class="section-subtitle fade-in">Peças desenhadas para revelar a sua melhor versão.</p>
+      <h2 class="section-title">Coleção Exclusiva</h2>
+      <p class="section-subtitle">Peças desenhadas para revelar a sua melhor versão.</p>
       <div id="product-grid" class="product-grid"></div>
     </div>
   </section>
@@ -52,10 +58,10 @@
   <!-- ===== PAINEL ADMIN ===== -->
   <section id="admin-panel" class="hidden">
     <div class="container">
-      <h2 class="section-title fade-in">Gerenciar Produtos</h2>
-      <p class="section-subtitle fade-in">Adicione, edite ou remova peças da sua coleção.</p>
+      <h2 class="section-title">Gerenciar Produtos</h2>
+      <p class="section-subtitle">Adicione, edite ou remova peças da sua coleção.</p>
 
-      <div id="admin-produtos" class="admin-card">
+      <div class="admin-form-container">
         <h3>Cadastrar Produto</h3>
 
         <label for="nome">Nome do Produto</label>
@@ -80,56 +86,80 @@
     </div>
   </section>
 
+  <!-- ===== MODAL LOGIN / CADASTRO ===== -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="auth-tabs">
+        <button class="tab-link active" data-tab="login-tab">Entrar</button>
+        <button class="tab-link" data-tab="signup-tab">Cadastrar</button>
+      </div>
+
+      <div id="login-tab" class="tab-content active">
+        <form id="login-form">
+          <label>Email</label>
+          <input id="login-email" type="email" required />
+          <label>Senha</label>
+          <input id="login-password" type="password" required />
+          <button type="submit" class="cta-button">Entrar</button>
+        </form>
+      </div>
+
+      <div id="signup-tab" class="tab-content">
+        <form id="signup-form">
+          <label>Email</label>
+          <input id="signup-email" type="email" required />
+          <label>Senha</label>
+          <input id="signup-password" type="password" required />
+          <button type="submit" class="cta-button">Cadastrar</button>
+        </form>
+      </div>
+
+      <p id="auth-error" class="auth-error-message hidden"></p>
+    </div>
+  </div>
+
+  <!-- ===== MODAL EDITAR PRODUTO ===== -->
+  <div id="edit-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h2>Editar Produto</h2>
+      <form id="edit-product-form">
+        <input type="hidden" id="edit-product-id" />
+        <label>Nome</label>
+        <input id="edit-product-name" type="text" required />
+        <label>Preço</label>
+        <input id="edit-product-price" type="number" step="0.01" required />
+        <label>Descrição</label>
+        <textarea id="edit-product-description" required></textarea>
+        <label>Imagem (URL)</label>
+        <input id="edit-product-image" type="text" required />
+        <label>Variações (Tamanho: Estampa1, Estampa2)</label>
+        <textarea id="edit-product-variants"></textarea>
+        <div class="modal-actions">
+          <button type="submit" class="cta-button">Salvar</button>
+          <button type="button" id="btn-cancel-edit" class="cta-button-outline">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ===== DEPOIMENTOS ===== -->
   <section id="testimonials">
     <div class="container">
       <div id="testimonial-carousel" class="testimonial-carousel"></div>
     </div>
   </section>
-  <div id="auth-modal" class="modal-overlay">
-  <div class="modal-content">
-    <h2>Entrar na conta</h2>
-    <form id="login-form">
-      <label>Email</label>
-      <input id="login-email" type="email" required />
-      <label>Senha</label>
-      <input id="login-password" type="password" required />
-      <button type="submit" class="cta-button">Entrar</button>
-      <p id="auth-error" class="auth-error-message hidden"></p>
-    </form>
-  </div>
-</div>
 
   <!-- ===== FOOTER ===== -->
   <footer id="footer" class="main-footer">
     <div class="container">
       <div class="social-links">
-        <a href="https://www.instagram.com/arenzamodaintima/" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-          </svg>
-        </a>
-        <a href="https://wa.me/5549998267351" aria-label="WhatsApp" target="_blank" rel="noopener noreferrer">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.031-.967-.273-.099-.472-.148-.672.149s-.773.967-.947 1.167c-.173.199-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.298-.018-.459.13-.608.134-.133.298-.347.446-.52.149-.173.198-.298.298-.497.099-.198.05-.372-.025-.521-.074-.149-.672-1.611-.921-2.207-.242-.579-.487-.5-.672-.51-.173-.009-.372-.011-.571-.011-.198 0-.52.074-.793.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.099 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.571-.347zM12.004 2C6.803 2 2.5 6.303 2.5 11.504c0 2.036.532 3.911 1.547 5.582L2 22l5.074-1.988c1.617.884 3.44 1.349 5.33 1.349h.002c5.201 0 9.504-4.303 9.504-9.504C21.91 6.303 17.207 2 12.004 2z"/>
-          </svg>
-        </a>
+        <a href="https://www.instagram.com/arenzamodaintima/" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="https://wa.me/5549998267351" target="_blank" rel="noopener noreferrer">WhatsApp</a>
       </div>
       <p>&copy; 2025 Arenza Moda Íntima – Desejo e elegância em cada detalhe.</p>
     </div>
   </footer>
 
-  <!-- ===== SUPABASE CONFIG ===== -->
-  <script>
-    window.ENV = {
-      SUPABASE_URL: "https://SEU-PROJETO.supabase.co",
-      SUPABASE_ANON_KEY: "SUA-CHAVE-ANON"
-    };
-  </script>
-
-  <!-- ===== JS PRINCIPAL ===== -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
