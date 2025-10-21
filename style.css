@@ -606,3 +606,19 @@ section {
   margin-top: 0.5rem;
   color: #555;
 }
+
+#admin-produtos input,
+#admin-produtos textarea {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 1rem;
+}
+
+#admin-produtos label {
+    font-weight: 600;
+    margin-top: 1rem;
+    display: block;
+}
