@@ -54,24 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabContents = document.querySelectorAll('.tab-content');
   const cancelEditBtn = document.getElementById('btn-cancel-edit');
 
-  // --- Funções para abrir e fechar o modal de edição ---
-function openEditModal() {
-  editModal.classList.add('active');
-}
-
-function closeEditModal() {
-  editModal.classList.remove('active');
-}
-
-// Quando clicar em "Cancelar"
-cancelEditBtn.addEventListener('click', closeEditModal);
-
-// Exemplo: quando clicar no botão "Editar Produto"
-document.querySelectorAll('.btn-edit-product').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    openEditModal();
-  });
-});
+  
 
   // NOVO: seletores do painel integrado (nome, preço, etc. + upload por tamanho)
   const nomeInput = document.getElementById('nome');
