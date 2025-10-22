@@ -79,7 +79,7 @@ body {
 .header-content {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: top;
 }
 .logo {
     display: flex;
